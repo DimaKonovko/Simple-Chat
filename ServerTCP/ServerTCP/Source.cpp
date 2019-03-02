@@ -10,18 +10,17 @@
 
 using namespace std;
 
-// Функция обработки сообщений от пользователя и их
-// отправки другим пользователям
+// working with clients
 void clientHandler(int index);
 
-SOCKET connections[MAX_CONNECTIONS] = { NULL };	//массив сокетов, предназначенный для хранения соединений
+SOCKET connections[MAX_CONNECTIONS] = { NULL };	// array of connections
 
 int main()
 {	
-	int iResult = 0;	//переменная, предназначенная для хранения результатов вызова функций
+	int iResult = 0;
 
 	//--------------------------------------------------------------------
-	// Подключение библиотеки
+	// Initialize winsock
 
 	WORD wVersionRequested;
 	wVersionRequested = MAKEWORD(2, 2);
@@ -35,7 +34,7 @@ int main()
 	}	 
 
 	//--------------------------------------------------------------------
-	// Создание сокета для прослушки
+	// Creating a socket fo listening
 
 	SOCKET listenSocket;
 
@@ -48,7 +47,7 @@ int main()
 	}
 
 	//--------------------------------------------------------------------
-	// Инициализация адреса	и порта сервера
+	// Initializing SOCKADDR structure
 
 	SOCKADDR_IN serverAddr;
 	int serverAddrSize = sizeof(serverAddr);
@@ -66,7 +65,7 @@ int main()
 	serverAddr.sin_port = htons(port);
 
 	//--------------------------------------------------------------------
-	// Привязка адреса и порта сервера к прослушивающему сокету
+	// Binding SOCKADDR structure with listening socket
 
 	iResult = bind(listenSocket, (SOCKADDR *)&serverAddr, serverAddrSize);
 	if (iResult == SOCKET_ERROR) {
@@ -79,10 +78,10 @@ int main()
 		WSACleanup();
 		return 1;
 	}
-	cout << "Server has been successfully started" << endl;	//сервер готов к работе
+	cout << "Server has been successfully started" << endl;
 
 	//--------------------------------------------------------------------
-	// Прослушивание на входящий запрос
+	// Listening
 	
 	iResult = listen(listenSocket, 0);
 	if (iResult == SOCKET_ERROR) {
@@ -97,7 +96,7 @@ int main()
 	}
 	 
 	//--------------------------------------------------------------------
-	// Подключение клиентов	
+	// Accepting clients
 
 	SOCKET acceptSocket;
 
@@ -117,7 +116,7 @@ int main()
 		cout << "Client has been successfully connected" << endl;
 
 		//--------------------------------------------------------------------
-		// Взаимодействие клиента и серверa
+		// Working with client
 
 		char buf[BUF_LENGTH] = " Welcome to server!\n Server is ready to receive your messages\n\0";
 		send(acceptSocket, buf, sizeof(buf), NULL);
@@ -125,7 +124,7 @@ int main()
 		for (int i = 0; i < MAX_CONNECTIONS; i++) {
 			if (connections[i] == NULL) {
 				connections[i] = acceptSocket;
-				//создание потока для взаимодействия клиентов с сервером
+				// creating a thread for working with clients
 				CreateThread(NULL, NULL, (LPTHREAD_START_ROUTINE)clientHandler, (LPVOID)(i), NULL, NULL);
 				break;
 			}
@@ -148,7 +147,7 @@ void clientHandler(int index)
 	char buf[BUF_LENGTH];
 	int iResult;
 	while (true) {
-		iResult = recv(connections[index], buf, sizeof(buf), NULL);	//прием сообщения от клиента
+		iResult = recv(connections[index], buf, sizeof(buf), NULL);	// receiving messages from client
 		if (iResult == -1) {
 			iResult = closesocket(connections[index]);
 			if (iResult == SOCKET_ERROR) {
@@ -159,7 +158,7 @@ void clientHandler(int index)
 				break;
 			}
 		}
-		//цикл отправки полученного сообщения остальным клиентам
+		// sending messages to other clients
 		for (int i = 0; i < MAX_CONNECTIONS; i++) {
 			if (connections[i] != NULL)
 				if (i != index) {
